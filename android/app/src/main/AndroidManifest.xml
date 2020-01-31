@@ -5,6 +5,12 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- <uses-feature
+      android:glEsVersion="0x00020000"
+      android:required="true"/>
+    <uses-library
+      android:name="org.apache.http.legacy"
+      android:required="false" /> -->
 
     <application
       android:name=".MainApplication"
@@ -29,7 +35,7 @@
         android:value="@integer/google_play_services_version" />
       <meta-data
         android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyDiAZage5UXuBz9b5D-FetdNagooIWRZ10"/>
+        android:value="AIzaSyC1uQ3vTtFavKiuua0NEbynG7Rza4XryFs"/>
     </application>
 
 </manifest>
