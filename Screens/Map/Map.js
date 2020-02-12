@@ -1,4 +1,4 @@
-[
+export const Costum = [
     {
         "elementType": "geometry",
         "stylers": [
@@ -230,4 +230,4 @@
             }
         ]
     }
-]
+];

@@ -78,7 +78,7 @@ import com.android.build.OutputFile
 
 project.ext.react = [
     entryFile: "index.js",
-    enableHermes: false,  // clean and rebuild if changing
+    enableHermes: true,  // clean and rebuild if changing
 ]
 
 apply from: "../../node_modules/react-native/react.gradle"
@@ -122,7 +122,7 @@ def enableHermes = project.ext.react.get("enableHermes", false);
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
-
+    
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -186,6 +186,17 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics:17.2.0'
     implementation "com.google.android.gms:play-services-base:16.1.0"
     implementation "com.google.firebase:firebase-core:16.0.9"
+    // implementation(project(':react-native-maps')){
+    //     exclude group: 'com.google.android.gms', module: 'play-services-base'
+    //     exclude group: 'com.google.android.gms', module: 'play-services-maps'
+    // }
+    // implementation 'com.google.android.gms:play-services-base:17.1.0'
+    // implementation 'com.google.android.gms:play-services-maps:16.1.0'
+
+    // implementation(project(':react-native-geolocation-service')) {
+    //     exclude group: 'com.google.android.gms', module: 'play-services-location'
+    // }
+    // implementation 'com.google.android.gms:play-services-location:17.0.0'
     // Maps
     // compile 'com.google.android.gms:play-services-base:10.0.1'
     // implementation 'com.google.android.gms:play-services-maps:16.0.0'

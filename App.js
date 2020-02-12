@@ -7,6 +7,7 @@ import AuthLoadingScreen from "./Screens/Loading";
 import HomeScreen from './Screens/Home';
 import SignInScreen from './Screens/SignIn'
 import { firebaseConfig } from './Screens/Config'
+import { RootStack } from './Screens/App'
 // goes here.
 
 firebase.initializeApp(firebaseConfig);
@@ -20,6 +21,7 @@ export default createAppContainer(
       AuthLoading: AuthLoadingScreen,
       App: AppStack,
       Auth: AuthStack,
+      sqlite: RootStack
     },
     {
       initialRouteName: 'AuthLoading',
