@@ -76,6 +76,7 @@ class LoadingScreen extends Component {
             function (user) {
                 if (user) {
                     this.props.navigation.navigate('App')
+                    global.isi = 0
                 } else {
                     this.props.navigation.navigate('Auth')
                 }

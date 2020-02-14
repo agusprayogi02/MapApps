@@ -3,7 +3,7 @@ import SQLite from "react-native-sqlite-2";
 const database_name = "MapApp.db";
 const database_version = "1.0";
 const database_displayname = "SQLite React Offline Database";
-const database_size = 200000;
+const database_size = 1;
 
 export default class Database {
 
