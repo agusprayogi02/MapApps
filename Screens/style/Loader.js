@@ -24,5 +24,4 @@ class Fire extends Component {
     }
 }
 
-const fire = new Fire();
-export default fire
+export default Fire

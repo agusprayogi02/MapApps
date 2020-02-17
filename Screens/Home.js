@@ -18,16 +18,13 @@ import Geolocation from 'react-native-geolocation-service'
 import PriceMarker from './Map/PriceMarker'
 import { getDistance } from 'geolib'
 import { Costum } from "./Map/Map";
+import styles from "./style/styles";
 import icon from './assets/icon.png'
 import Sqlite from "./database/SQLite"
 import IOSIcon from 'react-native-vector-icons/Ionicons'
 
 const { width, height } = Dimensions.get('window')
 
-const SCREEN_HEIGHT = height
-const SCREEN_WIDTH = width
-const center = 40
-const ASPECT_RATIO = SCREEN_WIDTH / SCREEN_HEIGHT
 const LATITUDE_DELTA = 0.0022
 const LONGITUDE_DELTA = 0.0020
 let id = 0;
@@ -62,29 +59,19 @@ class HomeScreen extends React.Component {
             <View style={{ marginLeft: 8 }}>
                 <Button
                     onPress={() => {
-                        // db.init().transaction(function (txn) {
-                        //     txn.executeSql("SELECT * FROM `kondisi` where id=1", [], function (tx, res) {
-                        //         for (let i = 0; i < res.rows.length; ++i) {
-                        //             console.log("P:", res.rows.item(i));
-                        //             var xx = res.rows.item(i)
-                        //             xx = xx.name
-                        //             if (xx == 1) {
-                        //                 db.init().transaction(function (txn) {
-                        //                     txn.executeSql("UPDATE kondisi SET name=:name WHERE id=1", [0], function (tx) {
-                        //                         console.log("isi", tx);
-                        //                     })
-                        //                 })
-                        //             } else {
-                        //                 db.init().transaction(function (txn) {
-                        //                     txn.executeSql("UPDATE kondisi SET name=:name WHERE id=1", [1], function (tx) {
-                        //                         console.log("kamu : ", tx);
-                        //                     })
-                        //                 })
-                        //             }
+                        db.conn().transaction(function (txn) {
+                            txn.executeSql("SELECT * FROM `kondisi` where id=1", [], function (tx, res) {
+                                for (let i = 0; i < res.rows.length; ++i) {
+                                    console.log("P:", res.rows.item(i));
+                                    var xx = res.rows.item(i)
+                                    xx = xx.name = 1 ? 0 : 1
+                                    db.conn().transaction(function (txn) {
+                                        txn.executeSql("UPDATE kondisi SET name=:name WHERE id=1", [xx])
+                                    })
 
-                        //         }
-                        //     });
-                        // })
+                                }
+                            });
+                        })
                     }}
                     icon={<IOSIcon name="ios-menu" size={24} color="black" />}
                     type="clear"
@@ -203,16 +190,18 @@ class HomeScreen extends React.Component {
     }
 
     change(event, marker) {
-        event.id = marker.key
-        let { markers } = this.state
-        // console.log(event.id, " , ", markers.key)
-        if (markers.key = event) {
-            let mar = markers
-            let i = event.id
-            var a = mar[i].key
-            var drag = "Edit Loc"
-            this.setState({ add: a, drag, edit: true })
-            // console.log(this.state.drag)
+        if (this.state.plus == false) {
+            event.id = marker.key
+            let { markers } = this.state
+            // console.log(event.id, " , ", markers.key)
+            if (markers.key = event) {
+                let mar = markers
+                let i = event.id
+                var a = mar[i].key
+                var drag = "Edit Loc"
+                this.setState({ add: a, drag, edit: true })
+                // console.log(this.state.drag)
+            }
         }
     }
 
@@ -227,6 +216,7 @@ class HomeScreen extends React.Component {
                 color: "red",
             }], coordinates: [r], jarak: 0, plus: false, drag, color: randomColor
         })
+        db.init()
     }
 
     onSet() {
@@ -305,13 +295,9 @@ class HomeScreen extends React.Component {
                 ...this.state.coordinates,
                 region
             ],
-            color: randomColor()
+            color: randomColor(),
+            jarak: 0
         });
-        this.state.coordinatesAll.map(
-            e => {
-                console.log(e.coordinates);
-            }
-        )
 
     }
     onChangeLoc() {
@@ -496,6 +482,17 @@ class HomeScreen extends React.Component {
         }
     }
 
+    konversi(e) {
+        id = e.id
+        this.setState({ coordinates: e.coordinates, changeRegion: e.changeRegion, markers: e.markers, color: e.color })
+    }
+
+    querydata() {
+        db.conn.transaction(function (txn) {
+            txn.executeSql()
+        })
+    }
+
     tambahLine() {
         const { markers, coordinates, changeRegion, color, index } = this.state
         let content = { coordinates: coordinates, changeRegion: changeRegion, markers: markers, id: id, color: color, index: index }
@@ -505,10 +502,25 @@ class HomeScreen extends React.Component {
                 content
             ]
         })
+        db.conn().transaction(function (txn) {
+            txn.executeSql(
+                "INSERT INTO Markers (name) VALUES (:name)", [JSON.stringify(content)]
+            );
+        });
         var index1 = index
         index1++
         this.setState({
             tambah: true, plus: true, markers: [], coordinates: [], color: null, index: index1
+        })
+        db.conn().transaction(function (txn) {
+            txn.executeSql(
+                "SELECT * FROM Markers ", [], function (tx, res) {
+                    for (let i = 0; i < res.rows.length; ++i) {
+                        var it = res.rows.item(i)
+                        // it = JSON.parse(it.name)
+                        console.log("item:", it);
+                    }
+                });
         })
     }
 
@@ -524,6 +536,25 @@ class HomeScreen extends React.Component {
                     onRegionChangeComplete={e => this.setState({ changePos: e })}
                     onPress={() => this.dialog()}
                     provider={PROVIDER_GOOGLE}>
+                    {this.state.coordinatesAll.map(marker => (
+                        marker.markers.map(m => (
+                            <Marker
+                                key={m.key}
+                                coordinate={m.coordinate}
+                                pinColor={m.color}
+                                onPress={e => this.change(e, m)}
+                            >
+                                <PriceMarker
+                                    fontSize={12}
+                                    amount={m.key}
+                                    borderColor={m.color}
+                                />
+                            </Marker>
+                        ))
+                    ))}
+                    {this.state.coordinatesAll.map(marker => (
+                        <Polyline coordinates={marker.coordinates} tappable={true} key={marker.index} onPress={e => console.log("ini : ", e)} strokeColor={marker.color} strokeWidth={5} />
+                    ))}
                     {this.state.markers.map(marker => (
                         <Marker
                             key={marker.key}
@@ -538,8 +569,8 @@ class HomeScreen extends React.Component {
                             />
                         </Marker>
                     ))}
+                    <Polyline coordinates={this.state.coordinates} tappable={true} onPress={e => console.log("Polyline: ", e)} strokeColor={this.state.color} strokeWidth={5} />
 
-                    <Polyline coordinates={this.state.coordinates} onPress={e => console.log("ini : ", e)} strokeColor={this.state.color} strokeWidth={3} />
                 </MapView>
                 {this.state.plus == true &&
                     <View style={{ ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" }}>
@@ -547,8 +578,7 @@ class HomeScreen extends React.Component {
                             source={icon}
                             style={styles.gambar}
                         />
-                    </View>
-                }
+                    </View>}
                 <Prompt />
                 {/* <View style={styles.buttonContainer}>
                     <TouchableOpacity
@@ -576,15 +606,16 @@ class HomeScreen extends React.Component {
                             </View>
                         </View>
                         {this.state.plusCoor == true && <View style={styles.isi}>
-                            <View style={{ justifyContent: "center" }}>
-                                <TouchableOpacity style={[styles.street, { backgroundColor: this.state.color }]}>
-                                    <Icon
-                                        name="check"
-                                        size={20}
-                                        color="white"
-                                    />
-                                </TouchableOpacity>
-                            </View>
+                            {this.state.coordinatesAll.map((marker) => (
+                                <View style={{ justifyContent: "center" }}>
+                                    <TouchableOpacity style={[styles.street, { backgroundColor: marker.color }]}>
+                                        <Icon
+                                            name="map-pin"
+                                            size={20}
+                                            color="white"
+                                        />
+                                    </TouchableOpacity>
+                                </View>))}
                             <View style={{ justifyContent: "center" }}>
                                 <TouchableOpacity style={[styles.street, { backgroundColor: "#0086cc" }]}
                                     onPress={() => this.tambahLine()}
@@ -651,64 +682,3 @@ HomeScreen.propTypes = {
 
 export default HomeScreen;
 
-const styles = StyleSheet.create({
-    isi: {
-        height: 50,
-        flex: 1,
-        backgroundColor: "#fff",
-        opacity: 0.7,
-        borderRadius: 5,
-        flexDirection: "row"
-    },
-    container: {
-        ...StyleSheet.absoluteFillObject,
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-    },
-    header: {
-        padding: 10,
-        justifyContent: 'center',
-        alignContent: 'center',
-        flexDirection: 'row',
-    },
-    map: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    gambar: {
-        marginBottom: center,
-        backgroundColor: 'transparent',
-        width: 40,
-        height: 40,
-    },
-    bubble: {
-        backgroundColor: 'rgba(255,255,255,0.7)',
-        paddingHorizontal: 18,
-        paddingVertical: 12,
-        borderRadius: 20,
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        marginBottom: 20,
-        backgroundColor: 'transparent',
-    },
-    export: {
-        marginBottom: 40,
-        backgroundColor: 'transparent',
-        backgroundColor: 'rgba(255,255,255,0.7)',
-        padding: 10
-    },
-    street: {
-        height: 35,
-        width: 35,
-        borderRadius: 35,
-        marginLeft: 7,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    btnshow: {
-        height: 50,
-        alignItems: 'center',
-        flexDirection: 'row',
-        marginRight: 20
-    }
-});

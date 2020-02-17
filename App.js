@@ -11,7 +11,7 @@ import { firebaseConfig } from './Screens/Config'
 import { RootStack } from './Screens/App'
 // goes here.
 
-firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig)
 
 const AppStack = createStackNavigator({
   Home: { screen: HomeScreen },

@@ -1,19 +1,22 @@
 import SQLite from "react-native-sqlite-2";
 
+let db = SQLite.openDatabase("MapApps.db", "1.0", "", 1)
 export default class Sqlite {
     init() {
-        let db = SQLite.openDatabase("MapApps.db", "1.0", "", 1)
         db.transaction(function (txn) {
             txn.executeSql("DROP TABLE IF EXISTS kondisi", []);
+            txn.executeSql("DROP TABLE IF EXISTS Markers", []);
             txn.executeSql(
                 "CREATE TABLE IF NOT EXISTS kondisi(id INTEGER PRIMARY KEY NOT NULL, name NUMERIC)",
                 []
             );
-            txn.executeSql("INSERT INTO kondisi (name) VALUES (:name)", [0]);
-            txn.executeSql("UPDATE kondisi SET name=:name WHERE id=1", [0], function (tx) {
-                // console.log("berhasil : ", tx);
-            })
+            txn.executeSql(
+                "CREATE TABLE IF NOT EXISTS Markers(id INTEGER PRIMARY KEY NOT NULL, name NUMERIC)",
+                []
+            );
         });
+    }
+    conn() {
         return db
     }
 }
