@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import {
-    View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert, Image
+    View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert, Image, FlatList
 } from 'react-native';
 import Prompt from 'react-native-simple-prompt';
 import { Button } from 'react-native-elements';
@@ -214,7 +214,7 @@ class HomeScreen extends React.Component {
                 coordinate: r,
                 key: id++,
                 color: "red",
-            }], coordinates: [r], jarak: 0, plus: false, drag, color: randomColor
+            }], coordinates: [r], jarak: 0, plus: false, drag, color: randomColor()
         })
         db.init()
     }
@@ -270,6 +270,24 @@ class HomeScreen extends React.Component {
                 this.onChangeLoc()
             }
         }
+    }
+
+    commitAll() {
+        let { coordinatesAll } = this.state
+        db.conn().transaction(function (txn) {
+            txn.executeSql("SELECT * FROM Markers", [], function (txn, res) {
+                let i
+                coordinatesAll = []
+                for (i = 0; i < res.rows.length; i++) {
+                    const dek = res.rows.item(i)
+                    dek = dek.name
+                    dek = JSON.parse(dek)
+                    coordinatesAll.push(dek)
+                }
+                console.log(coordinatesAll);
+
+            })
+        })
     }
 
     onTambahLine() {
@@ -512,16 +530,59 @@ class HomeScreen extends React.Component {
         this.setState({
             tambah: true, plus: true, markers: [], coordinates: [], color: null, index: index1
         })
-        db.conn().transaction(function (txn) {
-            txn.executeSql(
-                "SELECT * FROM Markers ", [], function (tx, res) {
-                    for (let i = 0; i < res.rows.length; ++i) {
-                        var it = res.rows.item(i)
-                        // it = JSON.parse(it.name)
-                        console.log("item:", it);
-                    }
-                });
+        // db.conn().transaction(function (txn) {
+        //     txn.executeSql(
+        //         "SELECT * FROM Markers ", [], function (tx, res) {
+        //             for (let i = 0; i < res.rows.length; ++i) {
+        //                 var it = res.rows.item(i)
+        //                 // it = JSON.parse(it.name)
+        //                 console.log("item:", it);
+        //             }
+        //         });
+        // })
+    }
+
+    cariData(event, marker) {
+        event.id = marker.index
+        let idt = marker.index + 1
+        const { markers, index, coordinates, changeRegion, color, coordinatesAll } = this.state
+        let content = { coordinates: coordinates, changeRegion: changeRegion, markers: markers, id: id, color: color, index: index }
+        db.conn().transaction((txn) => {
+            let data = txn
+            txn.executeSql("SELECT * FROM Markers WHERE id=?", [idt], function (tn, res) {
+                if (res.rows.length == 0) {
+                    data.executeSql("INSERT INTO Markers (name) VALUES (:name)", [JSON.stringify(content)])
+                } else {
+                    data.executeSql("UPDATE Markers SET name=? WHERE id=?", [JSON.stringify(content), idt])
+                }
+            })
         })
+
+        let i = this.state.index, iden = marker.index
+        let all = coordinatesAll
+        // console.log("isi : ", all[iden])
+        if (all[i] == null) {
+            this.setState({
+                coordinatesAll: [
+                    ...this.state.coordinatesAll,
+                    content
+                ]
+            })
+        } else {
+            all[i].pop
+            all[i] = content
+            this.setState({ coordinatesAll: all })
+        }
+
+        this.setState({
+            coordinates: all[iden].coordinates,
+            color: all[iden].color,
+            index: iden,
+            changeRegion: all[iden].changeRegion,
+            markers: all[iden].markers
+        })
+        id = all[iden].id
+
     }
 
     render() {
@@ -553,7 +614,7 @@ class HomeScreen extends React.Component {
                         ))
                     ))}
                     {this.state.coordinatesAll.map(marker => (
-                        <Polyline coordinates={marker.coordinates} tappable={true} key={marker.index} onPress={e => console.log("ini : ", e)} strokeColor={marker.color} strokeWidth={5} />
+                        <Polyline coordinates={marker.coordinates} key={marker.index} tappable={true} onPress={e => this.cariData(e, marker)} strokeColor={marker.color} strokeWidth={5} />
                     ))}
                     {this.state.markers.map(marker => (
                         <Marker
@@ -569,7 +630,7 @@ class HomeScreen extends React.Component {
                             />
                         </Marker>
                     ))}
-                    <Polyline coordinates={this.state.coordinates} tappable={true} onPress={e => console.log("Polyline: ", e)} strokeColor={this.state.color} strokeWidth={5} />
+                    <Polyline coordinates={this.state.coordinates} key={this.state.index} tappable={true} strokeColor={this.state.color} strokeWidth={5} />
 
                 </MapView>
                 {this.state.plus == true &&
@@ -607,8 +668,10 @@ class HomeScreen extends React.Component {
                         </View>
                         {this.state.plusCoor == true && <View style={styles.isi}>
                             {this.state.coordinatesAll.map((marker) => (
-                                <View style={{ justifyContent: "center" }}>
-                                    <TouchableOpacity style={[styles.street, { backgroundColor: marker.color }]}>
+                                <View style={{ justifyContent: "center" }} key={marker.index}>
+                                    <TouchableOpacity style={[styles.street, { backgroundColor: marker.color }]}
+                                        onPress={e => this.cariData(e, marker)}
+                                    >
                                         <Icon
                                             name="map-pin"
                                             size={20}
