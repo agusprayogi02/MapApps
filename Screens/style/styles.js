@@ -6,7 +6,7 @@ export default StyleSheet.create({
         flex: 1,
         backgroundColor: "#fff",
         opacity: 0.7,
-        borderRadius: 5,
+        borderRadius: 3,
         flexDirection: "row"
     },
     container: {
@@ -31,13 +31,13 @@ export default StyleSheet.create({
     },
     bubble: {
         backgroundColor: 'rgba(255,255,255,0.7)',
-        paddingHorizontal: 18,
-        paddingVertical: 12,
-        borderRadius: 20,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 3,
     },
     buttonContainer: {
         flexDirection: 'row',
-        marginBottom: 20,
+        marginVertical: 5,
         backgroundColor: 'transparent',
     },
     export: {
@@ -58,6 +58,27 @@ export default StyleSheet.create({
         height: 50,
         alignItems: 'center',
         flexDirection: 'row',
-        marginRight: 20
+        marginRight: 10
+    },
+    headerContainer: {
+        flexDirection: 'row',
+        backgroundColor: "lightblue",
+        borderRadius: 5,
+        paddingVertical: 7
+    },
+    menu: {
+        backgroundColor: '#fff',
+        opacity: 0.8,
+        height: 50,
+        width: 50,
+        borderRadius: 3,
+    },
+    showMenu: {
+        backgroundColor: "pink",
+        opacity: 0.6,
+        padding: 10,
+        marginTop: 10,
+        borderRadius: 5,
+        alignItems: "center"
     }
 });

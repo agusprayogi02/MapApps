@@ -1,9 +1,8 @@
 import React, { Component } from 'react';
 import {
-    View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert, Image, FlatList
+    View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert, Image, ScrollView
 } from 'react-native';
 import Prompt from 'react-native-simple-prompt';
-import { Button } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import RNFetchBlob from 'rn-fetch-blob';
 import RNFileSelector from 'react-native-file-selector';
@@ -22,25 +21,15 @@ import styles from "./style/styles";
 import icon from './assets/icon.png'
 import Sqlite from "./database/SQLite"
 import IOSIcon from 'react-native-vector-icons/Ionicons'
+import SQLite from "react-native-sqlite-2";
 
+let db = SQLite.openDatabase("MapApps.db", "1.0", "", 1)
+const conn = new Sqlite()
 const { width, height } = Dimensions.get('window')
 
 const LATITUDE_DELTA = 0.0022
 const LONGITUDE_DELTA = 0.0020
 let id = 0;
-const db = new Sqlite()
-// const LONGITUDE_DELTA = 0.035
-const config = {
-    animation: 'spring',
-    config: {
-        stiffness: 1000,
-        damping: 500,
-        mass: 3,
-        overshootClamping: true,
-        restDisplacementThreshold: 0.01,
-        restSpeedThreshold: 0.01,
-    },
-};
 
 function randomColor() {
     return `#${Math.floor(Math.random() * 16777215)
@@ -53,46 +42,45 @@ function log(eventName, e) {
     console.log(eventName, e.nativeEvent);
 }
 
-class HomeScreen extends React.Component {
-    static navigationOptions = {
-        headerLeft: () => (
-            <View style={{ marginLeft: 8 }}>
-                <Button
-                    onPress={() => {
-                        db.conn().transaction(function (txn) {
-                            txn.executeSql("SELECT * FROM `kondisi` where id=1", [], function (tx, res) {
-                                for (let i = 0; i < res.rows.length; ++i) {
-                                    console.log("P:", res.rows.item(i));
-                                    var xx = res.rows.item(i)
-                                    xx = xx.name = 1 ? 0 : 1
-                                    db.conn().transaction(function (txn) {
-                                        txn.executeSql("UPDATE kondisi SET name=:name WHERE id=1", [xx])
-                                    })
-
-                                }
-                            });
-                        })
-                    }}
-                    icon={<IOSIcon name="ios-menu" size={24} color="black" />}
-                    type="clear"
-                />
-            </View>
-        ),
-        headerRight: () => (
-            <View style={{ marginRight: 8 }}>
-                <Button
-                    onPress={() => firebase.auth().signOut()}
-                    icon={<Icon name="sign-out" size={24} color="black" />}
-                    type="clear"
-                />
-            </View>
-        ),
-        transitionSpec: {
-            open: config,
-            close: config,
-        },
-        headerTitleAlign: "center"
-    };
+class HomeScreen extends Component {
+    // static navigationOptions = {
+    //     headerLeft: () => (
+    //         <View style={{ marginLeft: 8 }}>
+    //             <Button
+    //                 onPress={() => {
+    //                     db.conn().transaction(function (txn) {
+    //                         txn.executeSql("SELECT * FROM `kondisi` where id=1", [], function (tx, res) {
+    //                             for (let i = 0; i < res.rows.length; ++i) {
+    //                                 console.log("P:", res.rows.item(i));
+    //                                 var xx = res.rows.item(i)
+    //                                 xx = xx.name = 1 ? 0 : 1
+    //                                 db.conn().transaction(function (txn) {
+    //                                     txn.executeSql("UPDATE kondisi SET name=:name WHERE id=1", [xx])
+    //                                 })
+    //                             }
+    //                         });
+    //                     })
+    //                 }}
+    //                 icon={<IOSIcon name="ios-menu" size={24} color="black" />}
+    //                 type="clear"
+    //             />
+    //         </View>
+    //     ),
+    //     headerRight: () => (
+    //         <View style={{ marginRight: 8 }}>
+    //             <Button
+    //                 onPress={() => firebase.auth().signOut()}
+    //                 icon={<Icon name="sign-out" size={24} color="black" />}
+    //                 type="clear"
+    //             />
+    //         </View>
+    //     ),
+    //     transitionSpec: {
+    //         open: config,
+    //         close: config,
+    //     },
+    //     headerTitleAlign: "center"
+    // };
 
     // static navigationOptions = {
     //     drawerLabel: 'Notifications',
@@ -141,7 +129,7 @@ class HomeScreen extends React.Component {
         this.locateCurrentPosition()
         global.dt = null
         global.menbar = true
-        db.init()
+        conn.init()
     }
 
     locateCurrentPosition = async () => {
@@ -216,7 +204,7 @@ class HomeScreen extends React.Component {
                 color: "red",
             }], coordinates: [r], jarak: 0, plus: false, drag, color: randomColor()
         })
-        db.init()
+        conn.init()
     }
 
     onSet() {
@@ -285,7 +273,6 @@ class HomeScreen extends React.Component {
                     coordinatesAll.push(dek)
                 }
                 console.log(coordinatesAll);
-
             })
         })
     }
@@ -369,9 +356,7 @@ class HomeScreen extends React.Component {
 
     }
 
-    UploadData(name) {
-        const { coordinates, markers, changeRegion, color } = this.state
-        let content = JSON.stringify({ coordinates: coordinates, changeRegion: changeRegion, markers: markers, id: id, color: color })
+    UploadData(name, content) {
 
         const dirs = '/storage/emulated/0/MapApps/'
         const path = dirs + name + '.txt'
@@ -407,11 +392,32 @@ class HomeScreen extends React.Component {
     }
 
     ChangeUpload() {
-        const { path, markers, coordinates, changeRegion, color } = this.state
-        let content = JSON.stringify({ coordinates: coordinates, changeRegion: changeRegion, markers: markers, id: id, color: color })
+        const { coordinates, markers, changeRegion, color, coordinatesAll, index, path } = this.state
+        let context = { coordinates: coordinates, changeRegion: changeRegion, markers: markers, id: id, color: color, index: index }
+
+        let i = index
+        let all = coordinatesAll
+        // console.log("isi : ", all[iden])
+        if (all[i] == null) {
+            this.setState({
+                coordinatesAll: [
+                    ...coordinatesAll,
+                    context
+                ]
+            })
+            all = [
+                ...coordinatesAll,
+                context
+            ]
+        } else {
+            all[i].pop
+            all[i] = context
+            this.setState({ coordinatesAll: all })
+        }
+        let content = JSON.stringify({ coordinatesAll: all })
         if (path == null) {
             Prompt.show('Export To File TXT', 'Set Name File', name =>
-                this.UploadData(name),
+                this.UploadData(name, content),
             )
         } else {
             RNFetchBlob.fs.writeFile(path, content, 'utf8')
@@ -520,15 +526,11 @@ class HomeScreen extends React.Component {
                 content
             ]
         })
-        db.conn().transaction(function (txn) {
-            txn.executeSql(
-                "INSERT INTO Markers (name) VALUES (:name)", [JSON.stringify(content)]
-            );
-        });
+        this.cekData()
         var index1 = index
         index1++
         this.setState({
-            tambah: true, plus: true, markers: [], coordinates: [], color: null, index: index1
+            tambah: true, plus: true, markers: [], coordinates: [], color: null, index: index1, jarak: 0
         })
         // db.conn().transaction(function (txn) {
         //     txn.executeSql(
@@ -542,12 +544,27 @@ class HomeScreen extends React.Component {
         // })
     }
 
+    cekData() {
+        const { markers, index, coordinates, changeRegion, color } = this.state
+        let content = JSON.stringify({ coordinates: coordinates, changeRegion: changeRegion, markers: markers, id: id, color: color, index: index })
+        db.transaction((txn) => {
+            let data = txn
+            txn.executeSql("SELECT * FROM Markers WHERE id=?", [index], function (tn, res) {
+                if (res.rows.length == 0) {
+                    data.executeSql("INSERT INTO Markers (name) VALUES (:name)", [content])
+                } else {
+                    data.executeSql("UPDATE Markers SET name=:name WHERE id=:id", [content, index])
+                }
+            })
+        })
+    }
+
     cariData(event, marker) {
         event.id = marker.index
         let idt = marker.index + 1
         const { markers, index, coordinates, changeRegion, color, coordinatesAll } = this.state
         let content = { coordinates: coordinates, changeRegion: changeRegion, markers: markers, id: id, color: color, index: index }
-        db.conn().transaction((txn) => {
+        db.transaction((txn) => {
             let data = txn
             txn.executeSql("SELECT * FROM Markers WHERE id=?", [idt], function (tn, res) {
                 if (res.rows.length == 0) {
@@ -579,10 +596,23 @@ class HomeScreen extends React.Component {
             color: all[iden].color,
             index: iden,
             changeRegion: all[iden].changeRegion,
-            markers: all[iden].markers
+            markers: all[iden].markers,
+            jarak: 0
         })
         id = all[iden].id
+        let n = 0, jar = 0, cob = all[iden].coordinates
+        for (let e = 1; e < cob.length; e++) {
+            var meter = getDistance(
+                cob[n], cob[n + 1],
+            );
+            n++
+            jar += meter
+            this.setState({ jarak: jar })
+        }
+    }
 
+    searchLoc() {
+        this.setState({ plus: true })
     }
 
     render() {
@@ -649,39 +679,44 @@ class HomeScreen extends React.Component {
                     </TouchableOpacity>
                 </View> */}
                 <View style={[styles.map, {
-                    marginTop: 10, marginHorizontal: 15,
+                    marginTop: 7, marginHorizontal: 14,
                 }]}>
-                    <View style={{ flexDirection: 'row' }}>
+                    <View style={styles.headerContainer}>
                         <View style={styles.btnshow}>
                             <View style={{ justifyContent: "center" }}>
                                 <TouchableOpacity
-                                    style={[styles.street, { backgroundColor: '#fff', opacity: 0.8, height: 40, width: 40 }]}
+                                    style={[styles.street, styles.menu]}
                                     onPress={() => this.setState({ plusCoor: !this.state.plusCoor })}
                                 >
                                     <IOSIcon
-                                        name="ios-map"
+                                        name="ios-menu"
                                         size={20}
                                         color="#000"
                                     />
                                 </TouchableOpacity>
                             </View>
                         </View>
-                        {this.state.plusCoor == true && <View style={styles.isi}>
-                            {this.state.coordinatesAll.map((marker) => (
-                                <View style={{ justifyContent: "center" }} key={marker.index}>
-                                    <TouchableOpacity style={[styles.street, { backgroundColor: marker.color }]}
-                                        onPress={e => this.cariData(e, marker)}
-                                    >
-                                        <Icon
-                                            name="map-pin"
-                                            size={20}
-                                            color="white"
-                                        />
-                                    </TouchableOpacity>
-                                </View>))}
-                            <View style={{ justifyContent: "center" }}>
-                                <TouchableOpacity style={[styles.street, { backgroundColor: "#0086cc" }]}
+                        <View style={styles.isi}>
+                            <ScrollView horizontal={true} style={{ alignSelf: "center" }}>
+                                {this.state.coordinatesAll.map((marker) => (
+                                    <View style={{ alignContent: 'flex-start' }} key={marker.index}>
+                                        <TouchableOpacity style={[styles.street, { backgroundColor: marker.color }]}
+                                            onPress={e => this.cariData(e, marker)}
+                                            disabled={this.state.plus}
+                                        >
+                                            <Icon
+                                                name="map-pin"
+                                                size={20}
+                                                color="white"
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </ScrollView>
+                            <View style={{ justifyContent: "center", marginRight: 5 }}>
+                                <TouchableOpacity style={[styles.street, { backgroundColor: "#0086cc", borderRadius: 5 }]}
                                     onPress={() => this.tambahLine()}
+                                    disabled={this.state.plus}
                                 >
                                     <Icon
                                         name="plus"
@@ -690,49 +725,65 @@ class HomeScreen extends React.Component {
                                     />
                                 </TouchableOpacity>
                             </View>
-                        </View>}
+                        </View>
+                        <View style={[styles.btnshow]}>
+                            <View style={{ justifyContent: "center" }}>
+                                <TouchableOpacity
+                                    style={[styles.street, styles.menu]}
+                                    onPress={() => firebase.auth().signOut()}
+                                >
+                                    <IOSIcon
+                                        name="ios-exit"
+                                        size={25}
+                                        color="#000"
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     </View>
-                </View>
-                <View style={styles.buttonContainer}>
-                    {/* <TouchableOpacity
+                    {this.state.plusCoor && <View style={styles.showMenu}>
+                        <View style={styles.buttonContainer}>
+                            {/* <TouchableOpacity
                         onPress={() => this.props.navigation.toggleDrawer()}
                         style={styles.bubble}>
                         <Icon name='map-pin' color="red" />
                     </TouchableOpacity> */}
-                    <TouchableOpacity
-                        onPress={() => this.ChangeUpload()}
-                        style={styles.bubble}>
-                        <Icon name="upload" size={18} color="black" />
-                    </TouchableOpacity>
-                    <View style={[styles.bubble, { marginHorizontal: 20 }]}>
-                        <Text>Jarak : {this.state.jarak} M</Text>
-                    </View>
-                    <TouchableOpacity
-                        onPress={() => this.ImportData()}
-                        style={styles.bubble}>
-                        <Icon name="download" size={18} color="black" />
-                    </TouchableOpacity>
-                </View>
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        onPress={() => this.resetMarker()}
-                        style={styles.bubble}
-                    >
-                        <Text>Tap to Reset Location</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => this.setState({ plus: true })}
-                        style={[styles.bubble, { marginLeft: 15 }]}
-                    >
-                        <Text>{this.state.drag} </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => this.set()}
-                        style={[styles.bubble, { marginLeft: 15 }]}
-                        disabled={!this.state.plus}
-                    >
-                        <Icon name="map-pin" size={18} color="black" />
-                    </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => this.ChangeUpload()}
+                                style={styles.bubble}>
+                                <Icon name="upload" size={18} color="black" />
+                            </TouchableOpacity>
+                            <View style={[styles.bubble, { marginHorizontal: 20 }]}>
+                                <Text>Jarak : {this.state.jarak} M</Text>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => this.ImportData()}
+                                style={styles.bubble}>
+                                <Icon name="download" size={18} color="black" />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.buttonContainer}>
+                            <TouchableOpacity
+                                onPress={() => this.resetMarker()}
+                                style={styles.bubble}
+                            >
+                                <Text>Reset Location</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => this.searchLoc()}
+                                style={[styles.bubble, { marginLeft: 15 }]}
+                            >
+                                <Text>{this.state.drag} </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => this.set()}
+                                style={[styles.bubble, { marginLeft: 15 }]}
+                                disabled={!this.state.plus}
+                            >
+                                <Icon name="map-pin" size={18} color="black" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>}
                 </View>
             </View >
         );
